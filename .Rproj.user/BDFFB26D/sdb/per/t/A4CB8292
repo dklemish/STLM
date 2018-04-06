@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "#E1 <- function(x, alp=1e-9){return(pgamma(x, alp, lower=FALSE)/alp)}\n#E1inv <- function(y, alp=1e-9){return(qgamma(alp*y, alp, lower=FALSE))}\n\ncyl.corr <- function(d, R){\n  return((2/pi)*acos(d/(2*R)) - (d/(2*pi*R^2))*sqrt(4*R^2-d^2))\n}\n\ndrawGammaRF <- function(X, shape, rate, eps, R=1, corrStruct=\"Cylinder\", sd=NULL){\n  set.seed(sd)\n\n    if(corrStruct==\"Cylinder\"){\n      type <- 1\n    }else if(corrStruct==\"Cone\"){\n      type <- 2\n    }\n  \n  distMatrix <- as.matrix(dist(X))\n  \n  #print(distMatrix)\n  \n  if(ncol(X) == 1){\n    result <- .Call('_STLM_drawGammaRF_1D', PACKAGE='STLM', X, shape, rate, eps, R, type, distMatrix)  \n  }else{\n    print(\"Not implemented yet!\")\n    #result <- .Call('_STLM_drawGammaRF_2D', PACKAGE='STLM', X, shape, rate, eps, R, type, distMatrix)\n  }\n  \n  return(result)\n}\n\n# drawGammaRF <- function(X, a, b, eps, R, shape=\"Cylinder\", mult=10, sd=NULL){\n#   set.seed(sd)\n#   \n#   norm.constant <- a*E1(b*eps)\n#   \n#   if(shape==\"Cylinder\"){\n#     nSpatial <- 3 # mass value + (x, y)\n#   }else if(shape==\"Cone\"){\n#     nSpatial <- 4 # mass vale + (x, y, h)\n#   }\n#   \n#   # Storage for Levy mass \"jumps\"\n#   mass.pts <- matrix(0, nrow=mult*round(norm.constant*nrow(X)), ncol=nSpatial)\n#   num.added <- rep(0, nrow(X))\n#   total.mass.pts <- 0\n#   \n#   # Draw mass points for first location\n#   levy.draws <- drawGammaLM(eps, a, b, norm.constant)\n#   num.draws <- length(levy.draws)\n#   mass.pts[(total.mass.pts+1):(total.mass.pts+num.draws), 1] <- levy.draws\n#   \n#   if(shape==\"Cylinder\"){\n#     draw.radius <- sqrt(runif(num.draws, 0, R))\n#     draw.angle <- runif(num.draws, 0, 2*pi)\n#     mass.pts[(total.mass.pts+1):(total.mass.pts+num.draws), 2] <- draw.radius*cos(draw.angle) + X[1, 1]\n#     mass.pts[(total.mass.pts+1):(total.mass.pts+num.draws), 3] <- draw.radius*sin(draw.angle) + X[1, 2]\n#   }\n#   \n#   num.added[1] <- num.draws\n#   total.mass.pts <- total.mass.pts + num.draws\n#   \n#   for(i in 2:nrow(X)){\n#     # Draw mass points for other locations, but discard points that fall \n#     # in the regions of previous locations\n#     levy.draws <- drawGammaLM(eps, a, b, norm.constant)\n#     num.draws  <- length(levy.draws)\n# \n#     if(shape==\"Cylinder\"){\n#       draw.radius <- sqrt(runif(num.draws, 0, R))\n#       draw.angle  <- runif(num.draws, 0, 2*pi)\n# \n#       x.loc <- X[i,1] + draw.radius*cos(draw.angle)\n#       y.loc <- X[i,2] + draw.radius*sin(draw.angle)\n# \n#       valid.new.pt <- rep(TRUE, num.draws)\n#       \n#       # Check previous locations whether new mass positions fall in those location's shapes\n#       for(j in 1:(i-1)){\n#         #valid.new.pt <- valid.new.pt & !(((x.loc-X[j,1])^2 + (y.loc-X[j,2])^2) < R^2)\n#         valid.new.pt <- !(((x.loc-X[j,1])^2 + (y.loc-X[j,2])^2) < R^2)\n#       }\n#       \n#       num.new <- sum(valid.new.pt)\n#       num.added[i] <- num.new\n# \n#       if(num.new > 0){\n#         mass.pts[(total.mass.pts+1):(total.mass.pts+num.new), 1] <- levy.draws[valid.new.pt]\n#         mass.pts[(total.mass.pts+1):(total.mass.pts+num.new), 2] <- x.loc[valid.new.pt]\n#         mass.pts[(total.mass.pts+1):(total.mass.pts+num.new), 3] <- y.loc[valid.new.pt]\n#         total.mass.pts <- total.mass.pts + num.new\n#       }\n#     }\n#   }\n#   \n#   # Calculate value of response at each location\n#   Y <- rep(0, nrow(X))\n#   \n#   if(shape==\"Cylinder\"){\n#     for(i in 1:nrow(X)){\n#       Y[i] <- sum(mass.pts[(mass.pts[,2]-X[i,1])^2 + (mass.pts[,3]-X[i,2])^2 < R^2,1])\n#     }    \n#   }\n# \n#   return(cbind(X, Y, num.added))\n# }",
+    "created" : 1522420508692.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "963262168",
+    "id" : "A4CB8292",
+    "lastKnownWriteTime" : 1523042245,
+    "last_content_update" : 1523042245954,
+    "path" : "~/STLM/R/STLM.R",
+    "project_path" : "R/STLM.R",
+    "properties" : {
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

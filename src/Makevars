@@ -1,0 +1,4 @@
+PKG_CPPFLAGS = -I. -I../inst/include
+
+PKG_LIBS = `$(R_HOME)/bin/Rscript -e "Rcpp:::LdFlags()"` \
+           `$(R_HOME)/bin/Rscript -e "RcppGSL:::LdFlags()"`

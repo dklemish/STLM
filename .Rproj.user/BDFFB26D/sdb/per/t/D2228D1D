@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "exportPattern(\"^[[:alpha:]]+\")\nuseDynLib(STLM)\n\nimportFrom(Rcpp, evalCpp)",
+    "created" : 1522429709229.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1203496011",
+    "id" : "D2228D1D",
+    "lastKnownWriteTime" : 1522431973,
+    "last_content_update" : 1522431973317,
+    "path" : "~/STLM/NAMESPACE",
+    "project_path" : "NAMESPACE",
+    "properties" : {
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_namespace"
+}

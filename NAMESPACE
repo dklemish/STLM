@@ -1,0 +1,4 @@
+exportPattern("^[[:alpha:]]+")
+useDynLib(STLM)
+
+importFrom(Rcpp, evalCpp)
