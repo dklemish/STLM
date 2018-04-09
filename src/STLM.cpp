@@ -152,14 +152,14 @@ SEXP drawGammaRF_1D(SEXP X_,
   
   if(numDraws > numMassPts){
     while(numDraws > numMassPts){
-      massPts.resize(2*numMassPts);
+      massPts.reserve(2*numMassPts);
       numMassPts = 2*numMassPts;
-      Rcout << "Resized!" << std::endl;
     }
   }
   
   // Assign draws for first location to point in space
   for(j = 0; j < numDraws; j++){
+    massPts.push_back(std::vector<double>(dimSpatial));
     massPts[j][0] = levyDraws[j];
     massPts[j][1] = X[0] + R::runif(-1*radius, radius);
   }
@@ -168,23 +168,20 @@ SEXP drawGammaRF_1D(SEXP X_,
   // Loop through remaining locations, drawing mass points and assigning 
   // them to points in space not yet accounted for by previous locations
   for(i = 1; i < nLoc; i++){
-    Rcout << "i = " << i-1 << ", " << "total mass points = " << totalDraws << std::endl;
     levyDraws = drawGamma(20, shape, rate, epsilon);
-
-    Rcout << "1";
+    
     if((totalDraws + numDraws) > numMassPts){
       while((totalDraws + numDraws) > numMassPts){
-        massPts.resize(2*numMassPts);
+        massPts.reserve(2*numMassPts);
         numMassPts = 2*numMassPts;
         Rcout << "Resized!" << std::endl;
       }
     }
-    Rcout << "2";    
+
     // Assign mass point to location in space
     for(j = 0; j < numDraws; j++){
       tempLoc = X[i] + R::runif(-1*radius, radius);
       validLoc = TRUE;
-      Rcout << "3";
       // Check previous locations; only need to check if current location is 
       // within 2*radius of previous location
       for(k = 0; (k<i) & validLoc; k++){
@@ -192,43 +189,34 @@ SEXP drawGammaRF_1D(SEXP X_,
           validLoc = validLoc & (std::abs(X[k] - tempLoc) > radius); 
         }
       }
-      Rcout << "4";
       // Current draw not in any previous location's "shape"
       if(validLoc){
+        massPts.push_back(std::vector<double>(dimSpatial));
         massPts[totalDraws][0] = levyDraws[j];
         massPts[totalDraws++][1] = tempLoc;
       }
     }
-    Rcout << "5";
-    Rcout << "total Draws = " << totalDraws << std::endl;
   }
   
-  // Rcout << "total draws = " << totalDraws << std::endl;
-
   // Calculate value of random variable at each location
   for(i = 0; i < nLoc; i++){
-    Rcout << "6";
     for(j = 0; j < totalDraws; j++){
-      Rcout << "7";
       if(std::abs(X[i] - massPts[j][1]) < radius){
-        Rcout << "8";
         Y(i) += massPts[j][0];
-        // Rcout << "X = " << X[i] << ", " << "mass = " <<
-        //   massPts[j][0] << ", " << "Y = " << Y(i) << std::endl;
       }
     }    
   }
   
   // Create NumericMatrix holding mass points
-  NumericMatrix mp(totalDraws, 2);
-  for(i = 0; i < totalDraws; i++){
-    mp(i,0) = massPts[i][0];
-    mp(i,1) = massPts[i][1];
-  }    
+  // NumericMatrix mp(totalDraws, 2);
+  // for(i = 0; i < totalDraws; i++){
+  //   mp(i,0) = massPts[i][0];
+  //   mp(i,1) = massPts[i][1];
+  // }    
   
-  //return(wrap(Y));
-  return(List::create(Named("massPts") = mp, 
-                      Named("Y") = Y));
+  return(wrap(Y));
+  // return(List::create(Named("massPts") = mp, 
+  //                     Named("Y") = Y));
 }
 
 // SEXP drawGammaRF_2D(SEXP X_,
