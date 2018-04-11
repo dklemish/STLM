@@ -1,18 +1,46 @@
 #E1 <- function(x, alp=1e-9){return(pgamma(x, alp, lower=FALSE)/alp)}
 #E1inv <- function(y, alp=1e-9){return(qgamma(alp*y, alp, lower=FALSE))}
 
-cyl.corr <- function(d, R){
-  return((2/pi)*acos(d/(2*R)) - (d/(2*pi*R^2))*sqrt(4*R^2-d^2))
-}
+cyl.corr <- Vectorize(function(d, R, dim){
+  if(d > 2*R){
+    return(0)
+  }else if(dim == 1){
+    return(1-0.5*d/R)
+  }else if(dim == 2){
+    return((2*R^2*acos(d/(2*R))-(0.5*d*sqrt(4*R^2 - d^2))) / (pi*R^2))
+  }
+})
+
+cone.corr <- Vectorize(function(d, R, dim){
+  if(d > 2*R){
+    return(0)
+  }else if(dim == 1){
+    return(0.25*(2-d/R)^2)
+  }else if(dim == 2){
+    #return((2/pi)*acos(d/(2*R)) - (d/(2*pi*R^2))*sqrt(4*R^2-d^2))
+    return("Not correct yet!")
+  }
+})
+
+gauss.corr <- Vectorize(function(d, R, sig, dim){
+  if(d > 2*R){
+    return(0)
+  }else if(dim == 1){
+    return((pnorm(R, 0, sig2) - pnorm(d/2, 0, sig2)) / (pnorm(R, 0, sig2) - 0.5))
+  }else if(dim == 2){
+    #return((2/pi)*acos(d/(2*R)) - (d/(2*pi*R^2))*sqrt(4*R^2-d^2))
+    return("Not correct yet!")
+  }
+})
 
 drawGammaRF <- function(X, shape, rate, eps, R=1, corrStruct="Cylinder", sd=NULL){
   set.seed(sd)
-
-    if(corrStruct=="Cylinder"){
-      type <- 1
-    }else if(corrStruct=="Cone"){
-      type <- 2
-    }
+  
+  if(corrStruct=="Cylinder"){
+    type <- 1
+  }else if(corrStruct=="Cone"){
+    type <- 2
+  }
   
   distMatrix <- as.matrix(dist(X))
   
