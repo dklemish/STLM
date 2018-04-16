@@ -120,7 +120,7 @@ SEXP drawGammaRF_1D(SEXP X_,
   std::vector<double> levyDraws;
   std::vector<std::vector<double> > massPts;
   int i, j, k;
-  double tempLoc;
+  double x_inc, x_star, h_star;
   bool validLoc;
   NumericVector Y;
   
@@ -157,43 +157,93 @@ SEXP drawGammaRF_1D(SEXP X_,
     }
   }
   
-  // Assign draws for first location to point in space
-  for(j = 0; j < numDraws; j++){
-    massPts.push_back(std::vector<double>(dimSpatial));
-    massPts[j][0] = levyDraws[j];
-    massPts[j][1] = X[0] + R::runif(-1*radius, radius);
-  }
-  totalDraws += numDraws;
-  
-  // Loop through remaining locations, drawing mass points and assigning 
-  // them to points in space not yet accounted for by previous locations
-  for(i = 1; i < nLoc; i++){
-    levyDraws = drawGamma(20, shape, rate, epsilon);
-    
-    if((totalDraws + numDraws) > numMassPts){
-      while((totalDraws + numDraws) > numMassPts){
-        massPts.reserve(2*numMassPts);
-        numMassPts = 2*numMassPts;
-        Rcout << "Resized!" << std::endl;
-      }
-    }
-
-    // Assign mass point to location in space
+  // Assign Levy draws to each point in space
+  if(type==1){
     for(j = 0; j < numDraws; j++){
-      tempLoc = X[i] + R::runif(-1*radius, radius);
-      validLoc = TRUE;
-      // Check previous locations; only need to check if current location is 
-      // within 2*radius of previous location
-      for(k = 0; (k<i) & validLoc; k++){
-        if(distMatrix(i,k) < 2*radius){
-          validLoc = validLoc & (std::abs(X[k] - tempLoc) > radius); 
+      massPts.push_back(std::vector<double>(dimSpatial));
+      massPts[j][0] = levyDraws[j];
+      x_inc = R::runif(-1*radius, radius);
+      massPts[j][1] = X[0] + x_inc;
+    }
+    totalDraws += numDraws;
+    
+    // Loop through remaining locations, drawing mass points and assigning 
+    // them to points in space not yet accounted for by previous locations
+    for(i = 1; i < nLoc; i++){
+      levyDraws = drawGamma(20, shape, rate, epsilon);
+      
+      if((totalDraws + numDraws) > numMassPts){
+        while((totalDraws + numDraws) > numMassPts){
+          massPts.reserve(2*numMassPts);
+          numMassPts = 2*numMassPts;
         }
       }
-      // Current draw not in any previous location's "shape"
-      if(validLoc){
-        massPts.push_back(std::vector<double>(dimSpatial));
-        massPts[totalDraws][0] = levyDraws[j];
-        massPts[totalDraws++][1] = tempLoc;
+      
+      // Assign mass point to location in space
+      for(j = 0; j < numDraws; j++){
+        x_inc = R::runif(-1*radius, radius);
+        x_star = X[i] + x_inc;
+        validLoc = TRUE;
+        // Check previous locations; only need to check if current location is 
+        // within 2*radius of previous location
+        for(k = 0; (k<i) & validLoc; k++){
+          if(distMatrix(i,k) < 2*radius){
+            validLoc = validLoc & (std::abs(X[k] - x_star) > radius); 
+          }
+        }
+        // Current draw not in any previous location's "shape"
+        if(validLoc){
+          massPts.push_back(std::vector<double>(dimSpatial));
+          massPts[totalDraws][0] = levyDraws[j];
+          massPts[totalDraws++][1] = x_star;
+        }
+      }
+    }    
+  }else if(type==2){
+    for(j = 0; j < numDraws; j++){
+      massPts.push_back(std::vector<double>(dimSpatial));
+      x_star = X[0] + R::runif(-1*radius, radius);
+      h_star = R::runif(0, (radius - std::abs(x_star - X[0])) / pow(radius, 2.0));
+      
+      massPts[j][0] = levyDraws[j];
+      massPts[j][1] = x_star;
+      massPts[j][2] = h_star;
+    }
+    totalDraws += numDraws;
+    
+    // Loop through remaining locations, drawing mass points and assigning 
+    // them to points in space not yet accounted for by previous locations
+    for(i = 1; i < nLoc; i++){
+      levyDraws = drawGamma(20, shape, rate, epsilon);
+      
+      if((totalDraws + numDraws) > numMassPts){
+        while((totalDraws + numDraws) > numMassPts){
+          massPts.reserve(2*numMassPts);
+          numMassPts = 2*numMassPts;
+        }
+      }
+      
+      // Assign mass point to location in space
+      for(j = 0; j < numDraws; j++){
+        x_star = X[i] + R::runif(-1*radius, radius);
+        h_star = R::runif(0, (radius - std::abs(x_star - X[i])) / pow(radius, 2.0));
+        
+        validLoc = TRUE;
+        // Check previous locations; only need to check if current location is 
+        // within 2*radius of previous location
+        for(k = 0; (k<i) & validLoc; k++){
+          if(distMatrix(i,k) < 2*radius){
+            validLoc    = validLoc & (std::abs(X[k] - x_star) > radius) & 
+              (h_star > ((radius - std::abs(x_star - X[k])) / pow(radius, 2.0)));
+          }
+        }
+        // Current draw not in any previous location's "shape"
+        if(validLoc){
+          massPts.push_back(std::vector<double>(dimSpatial));
+          massPts[totalDraws][0] = levyDraws[j];
+          massPts[totalDraws][1] = x_star;
+          massPts[totalDraws++][2] = h_star;
+        }
       }
     }
   }
@@ -207,6 +257,8 @@ SEXP drawGammaRF_1D(SEXP X_,
     }    
   }
   
+  return(wrap(Y));
+  
   // Create NumericMatrix holding mass points
   // NumericMatrix mp(totalDraws, 2);
   // for(i = 0; i < totalDraws; i++){
@@ -214,7 +266,6 @@ SEXP drawGammaRF_1D(SEXP X_,
   //   mp(i,1) = massPts[i][1];
   // }    
   
-  return(wrap(Y));
   // return(List::create(Named("massPts") = mp, 
   //                     Named("Y") = Y));
 }
