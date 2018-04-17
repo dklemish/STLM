@@ -27,6 +27,7 @@ int numDraws;
 int totalDraws;
 
 /** Function headers **/
+double cone_height1D(double, double);
 double E1(double);
 double E1inv(double, double, bool);
 std::vector<double> drawGamma(int, double, double, double);
@@ -34,6 +35,10 @@ std::vector<double> drawGamma(int, double, double, double);
 SEXP E1(SEXP);
 SEXP E1inv(SEXP, SEXP, SEXP);
 SEXP drawGamma(SEXP, SEXP, SEXP, SEXP);
+
+double cone_height1D(double d, double r){
+  return((r-std::abs(d))/pow(r,2.0));
+}
 
 // Exponential integral functions
 double E1(double x){return(gsl_sf_expint_E1(x));}
@@ -119,7 +124,7 @@ SEXP drawGammaRF_1D(SEXP X_,
   // Variable definitions
   std::vector<double> levyDraws;
   std::vector<std::vector<double> > massPts;
-  int i, j, k;
+  int i, j, k, ind = 0;
   double x_inc, x_star, h_star;
   bool validLoc;
   NumericVector Y;
@@ -202,7 +207,13 @@ SEXP drawGammaRF_1D(SEXP X_,
   }else if(type==2){
     for(j = 0; j < numDraws; j++){
       massPts.push_back(std::vector<double>(dimSpatial));
-      x_star = X[0] + R::runif(-1*radius, radius);
+      ind = std::floor(R::rbinom(1.0, 0.5) + 0.5);
+      
+      if(ind == 0){
+        x_star = (X[0] - radius) + radius*R::rbeta(2.0, 1.0);
+      }else{
+        x_star = X[0] + radius*R::rbeta(1.0, 2.0);
+      }
       h_star = R::runif(0, (radius - std::abs(x_star - X[0])) / pow(radius, 2.0));
       
       massPts[j][0] = levyDraws[j];
@@ -225,7 +236,13 @@ SEXP drawGammaRF_1D(SEXP X_,
       
       // Assign mass point to location in space
       for(j = 0; j < numDraws; j++){
-        x_star = X[i] + R::runif(-1*radius, radius);
+        ind = std::floor(R::rbinom(1.0, 0.5) + 0.5);
+        
+        if(ind == 0){
+          x_star = (X[0] - radius) + radius*R::rbeta(2.0, 1.0);
+        }else{
+          x_star = X[0] + radius*R::rbeta(1.0, 2.0);
+        }
         h_star = R::runif(0, (radius - std::abs(x_star - X[i])) / pow(radius, 2.0));
         
         validLoc = TRUE;
@@ -233,8 +250,10 @@ SEXP drawGammaRF_1D(SEXP X_,
         // within 2*radius of previous location
         for(k = 0; (k<i) & validLoc; k++){
           if(distMatrix(i,k) < 2*radius){
-            validLoc    = validLoc & (std::abs(X[k] - x_star) > radius) & 
-              (h_star > ((radius - std::abs(x_star - X[k])) / pow(radius, 2.0)));
+            validLoc = validLoc & 
+              (h_star > cone_height1D(x_star - X[k], radius));
+              // (std::abs(X[k] - x_star) > radius) & 
+              // (h_star > ((radius - std::abs(x_star - X[k])) / pow(radius, 2.0)));
           }
         }
         // Current draw not in any previous location's "shape"

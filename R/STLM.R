@@ -55,88 +55,16 @@ drawGammaRF <- function(X, shape, rate, eps, R=1, corrStruct="Cylinder", sd=NULL
   return(result)
 }
 
-# drawGammaRF <- function(X, a, b, eps, R, shape="Cylinder", mult=10, sd=NULL){
-#   set.seed(sd)
-#   
-#   norm.constant <- a*E1(b*eps)
-#   
-#   if(shape=="Cylinder"){
-#     nSpatial <- 3 # mass value + (x, y)
-#   }else if(shape=="Cone"){
-#     nSpatial <- 4 # mass vale + (x, y, h)
-#   }
-#   
-#   # Storage for Levy mass "jumps"
-#   mass.pts <- matrix(0, nrow=mult*round(norm.constant*nrow(X)), ncol=nSpatial)
-#   num.added <- rep(0, nrow(X))
-#   total.mass.pts <- 0
-#   
-#   # Draw mass points for first location
-#   levy.draws <- drawGammaLM(eps, a, b, norm.constant)
-#   num.draws <- length(levy.draws)
-#   mass.pts[(total.mass.pts+1):(total.mass.pts+num.draws), 1] <- levy.draws
-#   
-#   if(shape=="Cylinder"){
-#     draw.radius <- sqrt(runif(num.draws, 0, R))
-#     draw.angle <- runif(num.draws, 0, 2*pi)
-#     mass.pts[(total.mass.pts+1):(total.mass.pts+num.draws), 2] <- draw.radius*cos(draw.angle) + X[1, 1]
-#     mass.pts[(total.mass.pts+1):(total.mass.pts+num.draws), 3] <- draw.radius*sin(draw.angle) + X[1, 2]
-#   }
-#   
-#   num.added[1] <- num.draws
-#   total.mass.pts <- total.mass.pts + num.draws
-#   
-#   for(i in 2:nrow(X)){
-#     # Draw mass points for other locations, but discard points that fall 
-#     # in the regions of previous locations
-#     levy.draws <- drawGammaLM(eps, a, b, norm.constant)
-#     num.draws  <- length(levy.draws)
-# 
-#     if(shape=="Cylinder"){
-#       draw.radius <- sqrt(runif(num.draws, 0, R))
-#       draw.angle  <- runif(num.draws, 0, 2*pi)
-# 
-#       x.loc <- X[i,1] + draw.radius*cos(draw.angle)
-#       y.loc <- X[i,2] + draw.radius*sin(draw.angle)
-# 
-#       valid.new.pt <- rep(TRUE, num.draws)
-#       
-#       # Check previous locations whether new mass positions fall in those location's shapes
-#       for(j in 1:(i-1)){
-#         #valid.new.pt <- valid.new.pt & !(((x.loc-X[j,1])^2 + (y.loc-X[j,2])^2) < R^2)
-#         valid.new.pt <- !(((x.loc-X[j,1])^2 + (y.loc-X[j,2])^2) < R^2)
-#       }
-#       
-#       num.new <- sum(valid.new.pt)
-#       num.added[i] <- num.new
-# 
-#       if(num.new > 0){
-#         mass.pts[(total.mass.pts+1):(total.mass.pts+num.new), 1] <- levy.draws[valid.new.pt]
-#         mass.pts[(total.mass.pts+1):(total.mass.pts+num.new), 2] <- x.loc[valid.new.pt]
-#         mass.pts[(total.mass.pts+1):(total.mass.pts+num.new), 3] <- y.loc[valid.new.pt]
-#         total.mass.pts <- total.mass.pts + num.new
-#       }
-#     }
-#   }
-#   
-#   # Calculate value of response at each location
-#   Y <- rep(0, nrow(X))
-#   
-#   if(shape=="Cylinder"){
-#     for(i in 1:nrow(X)){
-#       Y[i] <- sum(mass.pts[(mass.pts[,2]-X[i,1])^2 + (mass.pts[,3]-X[i,2])^2 < R^2,1])
-#     }    
-#   }
-# 
-#   return(cbind(X, Y, num.added))
-# }
+cone_height1D <- function(d, R){
+    return((R-abs(d))/R^2)
+}
 
 drawGammaRF_R <- function(X, a, b, eps, R, sd=NULL){
   set.seed(sd)
   
   nSpatial <- 3 # mass value, x, h
   nLoc <- nrow(X)
-  mult <- 10000
+  mult <- 1000
   
   # Storage for Levy mass "jumps"
   mass.pts <- matrix(0, nrow=mult*nLoc, ncol=nSpatial)
@@ -146,18 +74,16 @@ drawGammaRF_R <- function(X, a, b, eps, R, sd=NULL){
   # Draw mass points for first location
   levy.draws <- drawGamma(10, a, b, eps)
   num.draws <- sum(levy.draws > 0)
+  num.draws.pos <- rbinom(num.draws, 1, 0.5)
   
-  ### Note: Not correct uniform distribution on triangle!
-  draw.loc <- X[1] + runif(num.draws, -R, R)
+  draw.loc    <- rep(0, num.draws)
+  draw.loc[num.draws.pos == 0] <- (X[1] - R) + R*rbeta(num.draws - sum(num.draws.pos), 2, 1)
+  draw.loc[num.draws.pos == 1] <- X[1] + R*rbeta(sum(num.draws.pos), 1, 2)
   draw.height <- runif(num.draws, 0, (R - abs(draw.loc - X[1])) / R^2)
   
   mass.pts[(total.mass.pts+1):(total.mass.pts+num.draws), 1] <- levy.draws[1:num.draws]
   mass.pts[(total.mass.pts+1):(total.mass.pts+num.draws), 2] <- draw.loc
   mass.pts[(total.mass.pts+1):(total.mass.pts+num.draws), 3] <- draw.height
-  
-  # plot(-9:1, (0:10)*0.01, type="l", xlim=c(-9,11))
-  # lines(1:11, (0:10)*-0.01 + 0.1)
-  # lines(draw.loc, draw.height, col="red", type="p")
   
   num.added[1] <- num.draws
   total.mass.pts <- total.mass.pts + num.draws
@@ -167,8 +93,12 @@ drawGammaRF_R <- function(X, a, b, eps, R, sd=NULL){
     # in the regions of previous locations
     levy.draws <- drawGamma(10, a, b, eps)
     num.draws  <- sum(levy.draws > 0)
+    draw.loc    <- rep(0, num.draws)
     
-    draw.loc    <- X[i,1] + runif(num.draws, -R, R)
+    num.draws.pos <- rbinom(num.draws, 1, 0.5)
+    
+    draw.loc[num.draws.pos == 0] <- (X[i] - R) + R*rbeta(num.draws - sum(num.draws.pos), 2, 1)
+    draw.loc[num.draws.pos == 1] <- X[i] + R*rbeta(sum(num.draws.pos), 1, 2)
     draw.height <- runif(num.draws, 0, (R - abs(draw.loc - X[i,1])) / R^2) 
     
     valid.new.pt <- rep(TRUE, num.draws)
@@ -176,8 +106,9 @@ drawGammaRF_R <- function(X, a, b, eps, R, sd=NULL){
     # Check previous locations whether new mass positions fall in those location's shapes
     for(j in 1:(i-1)){
       valid.new.pt <- valid.new.pt & 
-        (abs(X[j,1] - draw.loc) > R) & 
-        (draw.height > (R-abs(draw.loc - X[j,1]))/R^2)
+        # (abs(X[j,1] - draw.loc) > R) & 
+        # (draw.height > (R-abs(draw.loc - X[j,1]))/R^2)
+        (draw.height > cone_height1D(draw.loc - X[j,1], R))
     }
     
     num.new <- sum(valid.new.pt)
