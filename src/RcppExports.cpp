@@ -6,6 +6,18 @@
 
 using namespace Rcpp;
 
+// cone_height1D
+SEXP cone_height1D(SEXP d, SEXP r);
+RcppExport SEXP _STLM_cone_height1D(SEXP dSEXP, SEXP rSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type d(dSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type r(rSEXP);
+    rcpp_result_gen = Rcpp::wrap(cone_height1D(d, r));
+    return rcpp_result_gen;
+END_RCPP
+}
 // E1
 SEXP E1(SEXP x);
 RcppExport SEXP _STLM_E1(SEXP xSEXP) {
@@ -63,6 +75,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_STLM_cone_height1D", (DL_FUNC) &_STLM_cone_height1D, 2},
     {"_STLM_E1", (DL_FUNC) &_STLM_E1, 1},
     {"_STLM_E1inv", (DL_FUNC) &_STLM_E1inv, 3},
     {"_STLM_drawGamma", (DL_FUNC) &_STLM_drawGamma, 4},
